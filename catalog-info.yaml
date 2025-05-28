@@ -1,0 +1,36 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: "go-app-6"
+  description: This is a basic Go application
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/kubernetes-label-selector: 'entity-id=go-app-6'
+    backstage.io/kubernetes-namespace: go-app-6
+    argocd/app-name: "go-app-6"
+  links:
+    - url: https://github.com/"dgeorgievski"/"go-app-6"
+      title: Repo URL
+      icon: github
+spec:
+  owner: platform
+  lifecycle: experimental
+  type: service
+  system: "go-app-6"
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: "go-app-6"
+  description: An example system for demonstration purposes
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  links:
+    - url: https://github.com/dgeorgievski/backstage-templates
+      title: Template Repo
+      icon: github
+spec:
+  owner: platform
+  lifecycle: experimental
+  type: service

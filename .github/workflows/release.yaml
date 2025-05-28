@@ -1,0 +1,114 @@
+# .github/workflows/release.yml
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_bump:
+        description: Select part of SemVer to increment. Overriden by version_override value if provided. 
+        type: choice
+        default: Minor
+        options:
+          - Major
+          - Minor
+          - Patch 
+      version_override:
+        description: Set version manually. If provided, it overrides the application version.
+        type: string
+        
+permissions:
+  contents: write
+  packages: write
+  # issues: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check and set version
+        shell: bash
+        run: |
+          #!/usr/bin/env bash
+
+          ver_updated_stage=0
+          APP_VERSION="$(grep 'var VERSION' pkg/version/version.go | awk '{ print $4 }' | tr -d '"')"
+          NEW_APP_VERSION=""
+          semver_rex='^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
+          if [[ "x" != "x" ]]; then  
+            if [[ ! "" =~ $semver_rex ]]; then
+              echo "Provided version is not in SemVer format: "
+              exit 1
+            fi
+            ver=""
+            NEW_APP_VERSION="${ver#v}"
+            ver_updated_stage=1
+          fi
+
+          # check version bumps
+          if [[ $ver_updated_stage == 0 ]]; then
+            ver_updated_stage=2
+
+            latest_tag=$(git tag -l | tail -1)
+            latest_tag="${latest_tag#v}"
+            IFS='.' read -r MAJOR MINOR PATCH  <<< $latest_tag
+
+            case "" in
+              "Major")
+                MAJOR=$((MAJOR + 1))
+              ;;
+              "Minor")
+                MINOR=$((MINOR + 1))
+              ;;
+
+              "Patch")
+                PATCH=$((PATCH + 1))
+              ;;
+
+              *)
+                echo "Unknown SemVer part: "
+                exit 2
+                ;;
+            esac
+            NEW_APP_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          fi
+
+          if [[ $ver_updated_stage > 0 ]]; then
+            # create a tag 
+            echo "Preparing repo for version change"
+            git config --global user.name "GH Release"
+            git config --global user.email "git-user@github.com"
+            git remote set-url origin https://@github.com/
+
+            # change app version
+            /usr/bin/sed -i "s|\"$APP_VERSION\"|\"$NEW_APP_VERSION\"|g" pkg/version/version.go 
+            git status
+            git add pkg/version/version.go 
+            git commit -m "[release] bumped verstion to v${NEW_APP_VERSION}"
+            git push origin
+
+            # creat a dnew push tag to origin
+            git tag "v$NEW_APP_VERSION"
+            git push origin "v$NEW_APP_VERSION"
+
+            echo "Version changed, tag created and changes pushed to origin"
+          fi
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '^1.24'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          # either 'goreleaser' (default) or 'goreleaser-pro'
+          distribution: goreleaser
+          # 'latest', 'nightly', or a semver
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: 

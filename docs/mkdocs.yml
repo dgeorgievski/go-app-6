@@ -1,0 +1,9 @@
+site_name: CrossPlane Examples
+nav:
+  - Home: index.md
+  - CrossPlane Concepts: crossplane.md
+  - CNOE IDP: cnoe-provisioning.md
+  - Examples: examples.md
+  - About: about.md
+  - FAQ: faq.md
+theme: readthedocs
