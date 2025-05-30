@@ -13,6 +13,9 @@ metadata:
     - url: https://github.com/"dgeorgievski"/"go-app-6"
       title: Repo URL
       icon: github
+  tags:
+    - go
+    - web
 spec:
   owner: platform
   lifecycle: experimental
